@@ -34,10 +34,10 @@ pipeline {
 
         stage('Update Auto Scaling Group') {
             steps {
-                withAWS(region: "${AWS_REGION}", credentials: 'aws-credentials') {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     sh '''
-                        aws autoscaling update-auto-scaling-group --auto-scaling-group-name $ASG_NAME \
-                            --launch-template LaunchTemplateName=my-launch-template,Version='$Latest'
+                        aws autoscaling update-auto-scaling-group --auto-scaling-group-name my-asg \
+                            --launch-template LaunchTemplateName=my-template,Version='$Latest'
                     '''
                 }
             }
