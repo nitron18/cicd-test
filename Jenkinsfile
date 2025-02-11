@@ -36,8 +36,8 @@ pipeline {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     sh '''
-                        aws autoscaling update-auto-scaling-group --auto-scaling-group-name my-asg \
-                            --launch-template LaunchTemplateName=my-template,Version='$Latest'
+                        aws autoscaling update-auto-scaling-group --auto-scaling-group-name my-auto-scaling-group \
+                            --launch-template LaunchTemplateName=my-launch-template,Version='$Latest'
                     '''
                 }
             }
