@@ -42,12 +42,12 @@ pipeline {
                         ''', returnStdout: true).trim().split("\n")
 
                         withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'SSH_KEY')]) {
-                            sh "chmod 600 ${SSH_KEY}" 
+                            sh "chmod 600 ${env.SSH_KEY}" 
 
                             for (instance in instances) {
                                 sh """
                                     echo "Updating instance: ${instance}"
-                                    ssh -o StrictHostKeyChecking=no -i ${SSH_KEY} ubuntu@${instance} << 'EOF'
+                                    ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ubuntu@${instance} << 'EOF'
                                         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 367260454855.dkr.ecr.us-east-1.amazonaws.com
                                         docker pull 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
                                         docker stop my-static-container || true
