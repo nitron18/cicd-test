@@ -47,7 +47,7 @@ pipeline {
                             for (instance in instances) {
                                 sh """
                                     echo "Updating instance: ${instance}"
-                                    ssh -o StrictHostKeyChecking=no -i ${env.SSH_KEY} ubuntu@${instance} << 'EOF'
+                                    ssh -i ${env.SSH_KEY} ubuntu@${instance} << 'EOF'
                                         aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 367260454855.dkr.ecr.us-east-1.amazonaws.com
                                         docker pull 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
                                         docker stop my-static-container || true
