@@ -34,7 +34,7 @@ pipeline {
 
         stage('Update Running ASG Instances') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) { 
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     script {
                         def instances = sh(script: '''
                             aws ec2 describe-instances --filters "Name=tag:aws:autoscaling:groupName,Values=my-auto-scaling-group" \
@@ -42,6 +42,8 @@ pipeline {
                         ''', returnStdout: true).trim().split("\n")
 
                         withCredentials([sshUserPrivateKey(credentialsId: 'ssh-key', keyFileVariable: 'SSH_KEY')]) {
+                            sh "chmod 600 ${SSH_KEY}" 
+
                             for (instance in instances) {
                                 sh """
                                     echo "Updating instance: ${instance}"
