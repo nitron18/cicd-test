@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO = '367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth'
-        S3_BUCKET = 'my-codedeploy-bucket'
+        S3_BUCKET = 'my-codedeploy-bucket-3731'
         CODEDEPLOY_APP = 'MyDockerApp'
         CODEDEPLOY_GROUP = 'MyDeploymentGroup'
     }
