@@ -4,7 +4,9 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         ECR_REPO = '367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth'
-        ASG_NAME = 'my-auto-scaling-group'
+        S3_BUCKET = 'my-codedeploy-bucket'
+        CODEDEPLOY_APP = 'MyDockerApp'
+        CODEDEPLOY_GROUP = 'MyDeploymentGroup'
     }
 
     stages {
@@ -22,34 +24,34 @@ pipeline {
 
         stage('Push to AWS ECR') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
-                    sh '''
-                        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth
-                        docker tag my-static-site:latest 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
-                        docker push 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
-                    '''
-                }
+                sh '''
+                    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth
+                    docker tag my-static-site:latest 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
+                    docker push 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest
+                '''
             }
         }
 
-        stage('Refresh ASG Instances via SSM') {
+        stage('Upload Deployment Package to S3') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
-                    sh '''
-                        aws ssm send-command \
-                          --document-name "AWS-RunShellScript" \
-                          --targets Key=tag:aws:autoscaling:groupName,Values=my-auto-scaling-group \
-                          --parameters 'commands=[
-                              "sh -c \\\"aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth\\\"",
-                              "docker pull 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest",
-                              "docker stop my-static-container || true",
-                              "docker rm my-static-container || true",
-                              "docker run -d -p 80:3000 --restart always --name my-static-container 367260454855.dkr.ecr.us-east-1.amazonaws.com/devops/ananth:latest"
-                          ]' \
-                          --timeout-seconds 600 \
-                          --region us-east-1
-                    '''
-                }
+                sh '''
+                    zip -r deploy.zip appspec.yml scripts/
+                    aws s3 cp deploy.zip s3://my-codedeploy-bucket-3731/
+                '''
+            }
+        }
+
+        stage('Trigger AWS CodeDeploy') {
+            steps {
+                sh '''
+                    DEPLOY_ID=$(aws deploy create-deployment \
+                      --application-name $CODEDEPLOY_APP \
+                      --deployment-group-name $CODEDEPLOY_GROUP \
+                      --s3-location bucket=$S3_BUCKET,key=deploy.zip,bundleType=zip \
+                      --query "deploymentId" --output text)
+
+                    echo "Triggered deployment: $DEPLOY_ID"
+                '''
             }
         }
     }
